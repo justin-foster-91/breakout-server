@@ -14,6 +14,7 @@ const morganOption = (NODE_ENV === 'production')
 app.use(morgan(morganOption))
 app.use(helmet())
 app.use(cors())
+app.use(express.json());
 
 // epStart = EndPointStart, this automatically changes the server test
 const epStart = '/';
@@ -21,6 +22,51 @@ const startupGreet = 'Welcome aboard Captain, all systems online.';
 app.get(epStart, (req, res) => {
   res.send(startupGreet)
 })
+
+app.get('/play', (req, res) => {
+  req.app.get('db')('game_states')
+    .where({})
+    .then((gameStates) => {
+      if (gameStates.length === 0){
+        res.send({
+          message: "Empty"
+        })
+      } else{
+        res.send({
+          // secretTarget: gameStates[0].secret_target, 
+          Level: gameStates[0].level
+        })
+      }
+    })
+})
+
+
+app.post('/play', (req, res) => {
+  console.log(req.body);
+  req.app.get('db')('game_states')
+  .where({})
+  .then((gameStates) => {
+    if(gameStates.length === 0){
+      req.app.get('db')('game_states').insert({
+        level: req.body.Level,
+      })
+      .returning('*')
+      .then(game_state => {
+        res.send({message: "Message received"})
+      })
+    } else{
+      req.app.get('db')('game_states').where({id: gameStates[0].id}).update({
+        level: req.body.Level,
+      })
+      .returning('*')
+      .then(game_state => {
+        res.send({message: "Message received"})
+      })
+    }
+  })
+})
+
+
 
 app.use(function errorHandler(error, req, res, next) {
   let response;
